@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Will you be my Valentine?</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-
   <style>
     :root {
       --bg1: #ffd6e7;
@@ -29,6 +27,7 @@
     }
 
     .card {
+      position: relative;
       width: min(720px, 92vw);
       padding: 28px;
       background: var(--card);
@@ -45,15 +44,13 @@
 
     .button-zone {
       position: relative;
-      width: min(520px, 92%);
+      width: 100%;
       height: 160px;
       margin: 0 auto;
     }
 
     button {
       position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
       padding: 16px 26px;
       font-size: 18px;
       font-weight: 800;
@@ -62,32 +59,38 @@
       cursor: pointer;
       box-shadow: 0 10px 24px rgba(0,0,0,.14);
       user-select: none;
-      transition: background .12s ease, transform .12s ease, left .15s ease;
-      will-change: left, top, transform;
     }
 
     #yesBtn {
       left: 18%;
+      top: 50%;
+      transform: translateY(-50%);
       background: var(--yes);
       color: #fff;
     }
-    #yesBtn:hover { background: var(--yesHover); }
+
+    #yesBtn:hover {
+      background: var(--yesHover);
+    }
 
     #noBtn {
       left: 62%;
+      top: 50%;
+      transform: translateY(-50%);
       background: #e5e7eb;
       color: #111827;
+      transition: none; /* IMPORTANT: instant teleport */
     }
 
     .hint {
-      margin-top: 14px;
+      margin-top: 16px;
       font-size: 16px; /* +2px */
-      opacity: .8;
+      opacity: .85;
     }
 
     .result {
       display: none;
-      margin-top: 20px;
+      margin-top: 24px;
       animation: pop .4s ease;
     }
 
@@ -99,7 +102,7 @@
 </head>
 
 <body>
-  <main class="card">
+  <main class="card" id="card">
     <h1>will you be my valentine? 💖</h1>
 
     <section class="button-zone" id="zone">
@@ -111,17 +114,27 @@
 
     <section class="result" id="result">
       <h2>YAY 💘</h2>
-      <img src="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif" width="300">
+      <img
+        src="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
+        width="300"
+        alt="celebration"
+      />
     </section>
   </main>
 
   <script>
-    const zone = document.getElementById("zone");
+    const card   = document.getElementById("card");
+    const zone   = document.getElementById("zone");
     const yesBtn = document.getElementById("yesBtn");
     const noBtn  = document.getElementById("noBtn");
     const hint   = document.getElementById("hint");
     const result = document.getElementById("result");
 
+    /* ---------- STAGE LOGIC ---------- */
+    // 0 = initial
+    // 1 = first swap
+    // 2 = second swap
+    // 3 = teleport forever
     let stage = 0;
 
     function updateHint() {
@@ -131,92 +144,80 @@
       if (stage >= 3) hint.textContent = "There is no escape 😈";
     }
 
-    function swapButtons() {
-      const y = yesBtn.style.left || "18%";
-      const n = noBtn.style.left  || "62%";
-      yesBtn.style.left = n;
-      noBtn.style.left  = y;
-    }
-
-    /* YES GROWS */
+    /* ---------- YES GROWS ---------- */
     let yesScale = 1;
     function growYes() {
-      yesScale = Math.min(2.4, yesScale + 0.04);
+      yesScale = Math.min(2.5, yesScale + 0.08);
       yesBtn.style.transform = `translateY(-50%) scale(${yesScale})`;
     }
 
-    /* RUNAWAY NO (SMOOTH + FAST) */
-    let fleeing = false;
-    let vx = 0, vy = 0;
-    let pointerX = null, pointerY = null;
+    /* ---------- BUTTON SWAP ---------- */
+    function swapButtons() {
+      const yesLeft = yesBtn.style.left || "18%";
+      const noLeft  = noBtn.style.left  || "62%";
+      yesBtn.style.left = noLeft;
+      noBtn.style.left  = yesLeft;
+    }
 
-    zone.addEventListener("pointermove", e => {
-      pointerX = e.clientX;
-      pointerY = e.clientY;
-    });
+    /* ---------- TELEPORT NO ---------- */
+    function teleportNo() {
+      const cardRect = card.getBoundingClientRect();
+      const btnRect  = noBtn.getBoundingClientRect();
 
-    function animateNo() {
-      if (fleeing && pointerX !== null) {
-        const z = zone.getBoundingClientRect();
-        const b = noBtn.getBoundingClientRect();
+      const padding = 12;
 
-        const cx = b.left + b.width / 2;
-        const cy = b.top  + b.height / 2;
+      const maxX = cardRect.width  - btnRect.width  - padding;
+      const maxY = cardRect.height - btnRect.height - padding;
 
-        let dx = cx - pointerX;
-        let dy = cy - pointerY;
-        const dist = Math.hypot(dx, dy) || 1;
+      const randomX = Math.random() * maxX + padding;
+      const randomY = Math.random() * maxY + padding;
 
-        dx /= dist;
-        dy /= dist;
+      // Convert card coords → zone coords
+      const zoneRect = zone.getBoundingClientRect();
+      const offsetX = cardRect.left - zoneRect.left;
+      const offsetY = cardRect.top  - zoneRect.top;
 
-        // Panic boost when close
-        const panic = dist < 160 ? 3.5 : 1.8;
+      noBtn.style.left = (randomX + offsetX) + "px";
+      noBtn.style.top  = (randomY + offsetY) + "px";
+      noBtn.style.transform = "none";
 
-        // Smooth steering
-        vx = vx * 0.85 + dx * panic * 6;
-        vy = vy * 0.85 + dy * panic * 6;
+      growYes();
+    }
 
-        // Clamp speed (FAST)
-        const speed = Math.hypot(vx, vy);
-        const min = 14;
-        const max = 26;
-
-        if (speed < min) {
-          vx = (vx / speed) * min;
-          vy = (vy / speed) * min;
-        }
-        if (speed > max) {
-          vx = (vx / speed) * max;
-          vy = (vy / speed) * max;
-        }
-
-        let left = (b.left - z.left) + vx;
-        let top  = (b.top  - z.top ) + vy;
-
-        if (left <= 0 || left >= z.width - b.width) vx *= -0.9;
-        if (top  <= 0 || top  >= z.height - b.height) vy *= -0.9;
-
-        noBtn.style.left = Math.max(0, Math.min(left, z.width - b.width)) + "px";
-        noBtn.style.top  = Math.max(0, Math.min(top,  z.height - b.height)) + "px";
-
-        growYes();
+    /* ---------- NO ATTEMPTS ---------- */
+    function onNoAttempt() {
+      if (stage === 0) {
+        swapButtons();
+        stage = 1;
+        updateHint();
+        return;
       }
 
-      requestAnimationFrame(animateNo);
-    }
-    animateNo();
+      if (stage === 1) {
+        swapButtons();
+        stage = 2;
+        updateHint();
+        return;
+      }
 
-    function onNoAttempt() {
-      if (stage === 0) { swapButtons(); stage = 1; updateHint(); return; }
-      if (stage === 1) { swapButtons(); stage = 2; updateHint(); return; }
-      if (stage === 2) { stage = 3; fleeing = true; updateHint(); }
+      // stage 2 → teleport mode
+      stage = 3;
+      updateHint();
+      teleportNo();
     }
 
+    // Desktop
     noBtn.addEventListener("pointerenter", onNoAttempt);
-    noBtn.addEventListener("pointerdown", e => { e.preventDefault(); onNoAttempt(); });
+
+    // Mobile
+    noBtn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      onNoAttempt();
+    });
+
     noBtn.addEventListener("click", e => e.preventDefault());
 
+    /* ---------- YES CLICK ---------- */
     yesBtn.addEventListener("click", () => {
       zone.style.display = "none";
       hint.style.display = "none";
