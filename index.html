@@ -26,6 +26,34 @@
       overflow: hidden;
     }
 
+    /* ====== LAYOUT WRAPPER ====== */
+    .layout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+    }
+
+    /* ====== SIDE PHOTOS ====== */
+    .side-photo {
+      width: 220px;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .side-photo.left {
+      transform: translateX(-20px);
+    }
+
+    .side-photo.right {
+      transform: translateX(20px);
+    }
+
+    /* ====== CARD ====== */
     .card {
       position: relative;
       width: min(720px, 92vw);
@@ -102,25 +130,35 @@
 </head>
 
 <body>
-  <main class="card" id="card">
-    <h1>diya will you be my valentine? 💖</h1>
 
-    <section class="button-zone" id="zone">
-      <button id="yesBtn">Yes</button>
-      <button id="noBtn">No</button>
-    </section>
+  <div class="layout">
+    <!-- LEFT PHOTO -->
+    <img src="IMG_1336.jpg" class="side-photo left" alt="photo left">
 
-    <div class="hint" id="hint">i love you</div>
+    <!-- MAIN CARD -->
+    <main class="card" id="card">
+      <h1>diya will you be my valentine? 💖</h1>
 
-    <section class="result" id="result">
-      <h2>YAY 💘</h2>
-      <img
-        src="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
-        width="300"
-        alt="celebration"
-      />
-    </section>
-  </main>
+      <section class="button-zone" id="zone">
+        <button id="yesBtn">Yes</button>
+        <button id="noBtn">No</button>
+      </section>
+
+      <div class="hint" id="hint">i love you</div>
+
+      <section class="result" id="result">
+        <h2>YAY 💘</h2>
+        <img
+          src="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
+          width="300"
+          alt="celebration"
+        />
+      </section>
+    </main>
+
+    <!-- RIGHT PHOTO -->
+    <img src="IMG_9938.jpg" class="side-photo right" alt="photo right">
+  </div>
 
   <script>
     const card   = document.getElementById("card");
@@ -131,10 +169,6 @@
     const result = document.getElementById("result");
 
     /* ---------- STAGE LOGIC ---------- */
-    // 0 = initial
-    // 1 = first swap
-    // 2 = second swap
-    // 3 = teleport mode
     let stage = 0;
 
     function updateHint() {
@@ -175,29 +209,25 @@
       const zoneRect = zone.getBoundingClientRect();
 
       const padding = 12;
-      const minDistanceFromCursor = 120;
+      const minDistance = 120;
 
-      let attempts = 0;
-      let x, y;
+      let x, y, tries = 0;
 
       do {
         const maxX = cardRect.width  - btnRect.width  - padding;
         const maxY = cardRect.height - btnRect.height - padding;
-
         x = Math.random() * maxX + padding;
         y = Math.random() * maxY + padding;
-
-        attempts++;
-        if (attempts > 10) break;
+        tries++;
       } while (
         cursorX !== null &&
         Math.hypot(
           (cardRect.left + x) - cursorX,
           (cardRect.top  + y) - cursorY
-        ) < minDistanceFromCursor
+        ) < minDistance &&
+        tries < 10
       );
 
-      // Convert card → zone coordinates
       const offsetX = cardRect.left - zoneRect.left;
       const offsetY = cardRect.top  - zoneRect.top;
 
@@ -229,15 +259,11 @@
       teleportNo();
     }
 
-    // Desktop
     noBtn.addEventListener("pointerenter", onNoAttempt);
-
-    // Mobile
     noBtn.addEventListener("pointerdown", e => {
       e.preventDefault();
       onNoAttempt();
     });
-
     noBtn.addEventListener("click", e => e.preventDefault());
 
     /* ---------- YES CLICK ---------- */
@@ -245,6 +271,11 @@
       zone.style.display = "none";
       hint.style.display = "none";
       result.style.display = "block";
+
+      document.querySelectorAll(".side-photo").forEach(img => {
+        img.style.opacity = "1";
+        img.style.transform = "translateX(0)";
+      });
     });
 
     updateHint();
