@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Will you be my Valentine?</title>
 
   <!-- =====================================================
@@ -21,12 +21,59 @@
 
     body {
       margin: 0;
-      min-height: 100vh;
+      min-height: 100svh;
       display: grid;
       place-items: center;
       background: radial-gradient(circle at top, var(--bg2), var(--bg1));
       font-family: system-ui, sans-serif;
+      overflow: hidden; /* keeps flying pics on screen */
+      padding: 16px;
+    }
+
+    /* ====== FLOATING PHOTOS LAYER ====== */
+    #floatingPhotos {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1; /* behind the card */
+    }
+
+    .float-photo {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 14px;
       overflow: hidden;
+      opacity: 0;
+      will-change: transform;
+      animation: floatY 6.5s ease-in-out infinite;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.20));
+    }
+
+    .float-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* pink overlay (~15%) */
+    .float-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 59, 122, 0.15),
+        rgba(255, 214, 231, 0.15)
+      );
+      pointer-events: none;
+    }
+
+    @keyframes floatY {
+      0%   { transform: translateY(0) rotate(-1deg); }
+      50%  { transform: translateY(-16px) rotate(1deg); }
+      100% { transform: translateY(0) rotate(-1deg); }
     }
 
     /* ====== MAIN CARD ====== */
@@ -39,17 +86,17 @@
       border-radius: 22px;
       text-align: center;
       box-shadow: 0 18px 60px rgba(0,0,0,.15);
-      z-index: 10;
+      z-index: 10; /* above floating photos */
     }
 
     h1 {
       font-size: clamp(26px, 4vw, 44px);
-      margin-bottom: 18px;
+      margin: 8px 0 18px;
     }
 
     .button-zone {
       position: relative;
-      width: 100%;
+      width: min(520px, 92%);
       height: 160px;
       margin: 0 auto;
     }
@@ -64,6 +111,7 @@
       cursor: pointer;
       box-shadow: 0 10px 24px rgba(0,0,0,.14);
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     #yesBtn {
@@ -72,6 +120,7 @@
       transform: translateY(-50%);
       background: var(--yes);
       color: #fff;
+      transition: transform .12s ease, background .12s ease;
     }
 
     #yesBtn:hover { background: var(--yesHover); }
@@ -82,12 +131,12 @@
       transform: translateY(-50%);
       background: #e5e7eb;
       color: #111827;
-      transition: none;
+      transition: none; /* teleport should be instant */
     }
 
     .hint {
       margin-top: 16px;
-      font-size: 16px;
+      font-size: 16px; /* +2px */
       opacity: .85;
     }
 
@@ -109,52 +158,14 @@
       from { transform: scale(.96); opacity: 0; }
       to   { transform: scale(1); opacity: 1; }
     }
-
-    /* ====== FLOATING PHOTOS ====== */
-    .float-photo {
-      position: absolute;
-      width: 80px;
-      height: 80px;
-      border-radius: 14px;
-      overflow: hidden;
-      pointer-events: none;
-      opacity: 0;
-      animation: float 6s ease-in-out infinite;
-      z-index: 1;
-    }
-
-    .float-photo img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    /* pink overlay */
-    .float-photo::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        135deg,
-        rgba(255, 59, 122, 0.15),
-        rgba(255, 214, 231, 0.15)
-      );
-    }
-
-    @keyframes float {
-      0%   { transform: translateY(0); }
-      50%  { transform: translateY(-14px); }
-      100% { transform: translateY(0); }
-    }
   </style>
 </head>
 
 <body>
 
-  <!-- FLOATING PHOTOS (hidden initially) -->
+  <!-- Floating photos live here (they appear after YES) -->
   <div id="floatingPhotos"></div>
 
-  <!-- MAIN CARD -->
   <main class="card" id="card">
     <h1>diya will you be my valentine? 💖</h1>
 
@@ -165,8 +176,9 @@
 
     <div class="hint" id="hint">i love you</div>
 
+    <!-- Replace the GIF with IMG_9938.jpg -->
     <section class="result" id="result">
-      <img src="IMG_9938.jpg" alt="us 💘">
+      <img src="IMG_9938.jpg" alt="valentine photo">
     </section>
   </main>
 
@@ -174,14 +186,20 @@
        ===================== JAVASCRIPT ====================
        ===================================================== -->
   <script>
+    const card   = document.getElementById("card");
+    const zone   = document.getElementById("zone");
     const yesBtn = document.getElementById("yesBtn");
     const noBtn  = document.getElementById("noBtn");
-    const zone   = document.getElementById("zone");
     const hint   = document.getElementById("hint");
     const result = document.getElementById("result");
     const floatingPhotos = document.getElementById("floatingPhotos");
 
-    /* ---------- STAGE LOGIC ---------- */
+    /* ---------- Captions / stages ----------
+       0 = start
+       1 = first swap
+       2 = second swap
+       3 = teleport mode
+    --------------------------------------- */
     let stage = 0;
 
     function updateHint() {
@@ -191,6 +209,14 @@
       if (stage >= 3) hint.textContent = "you know the answer 😘";
     }
 
+    /* ---------- YES grows ---------- */
+    let yesScale = 1;
+    function growYes() {
+      yesScale = Math.min(2.5, yesScale + 0.08);
+      yesBtn.style.transform = `translateY(-50%) scale(${yesScale})`;
+    }
+
+    /* ---------- Swap buttons ---------- */
     function swapButtons() {
       const y = yesBtn.style.left || "18%";
       const n = noBtn.style.left  || "62%";
@@ -198,15 +224,45 @@
       noBtn.style.left  = y;
     }
 
+    /* ---------- Cursor tracking (for safe teleport) ---------- */
+    let cursorX = null, cursorY = null;
+    document.addEventListener("pointermove", (e) => {
+      cursorX = e.clientX;
+      cursorY = e.clientY;
+    });
+
+    /* ---------- Teleport NO inside the card (cursor-safe) ---------- */
     function teleportNo() {
-      const card = document.getElementById("card").getBoundingClientRect();
-      const btn  = noBtn.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      const btnRect  = noBtn.getBoundingClientRect();
+      const zoneRect = zone.getBoundingClientRect();
 
-      const x = Math.random() * (card.width - btn.width);
-      const y = Math.random() * (card.height - btn.height);
+      const padding = 12;
+      const minDistance = 120;
 
-      noBtn.style.left = x + "px";
-      noBtn.style.top  = y + "px";
+      let x, y, tries = 0;
+
+      do {
+        const maxX = cardRect.width  - btnRect.width  - padding;
+        const maxY = cardRect.height - btnRect.height - padding;
+        x = Math.random() * maxX + padding;
+        y = Math.random() * maxY + padding;
+        tries++;
+      } while (
+        cursorX !== null &&
+        Math.hypot((cardRect.left + x) - cursorX, (cardRect.top + y) - cursorY) < minDistance &&
+        tries < 12
+      );
+
+      // Convert card coords -> zone coords (since NO button is positioned in the zone)
+      const offsetX = cardRect.left - zoneRect.left;
+      const offsetY = cardRect.top  - zoneRect.top;
+
+      noBtn.style.left = (x + offsetX) + "px";
+      noBtn.style.top  = (y + offsetY) + "px";
+      noBtn.style.transform = "none";
+
+      growYes();
     }
 
     function onNoAttempt() {
@@ -218,43 +274,78 @@
     }
 
     noBtn.addEventListener("pointerenter", onNoAttempt);
-    noBtn.addEventListener("pointerdown", e => { e.preventDefault(); onNoAttempt(); });
-    noBtn.addEventListener("click", e => e.preventDefault());
+    noBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); onNoAttempt(); });
+    noBtn.addEventListener("click", (e) => e.preventDefault());
 
-    /* ---------- FLOATING PHOTO SPAWN ---------- */
+    /* ---------- Flying pics (spawn after YES) ---------- */
     const photoFiles = [
-      "DSC_0580.JPEG",
+      "Copy of DSC_0580.JPEG",
       "IMG_1206.JPG",
-      "IMG_1336.jpg",
+      "IMG_1336.JPG",
       "IMG_1343.JPG",
-      "IMG_1420.jpg",
+      "IMG_1420.JPG",
       "IMG_1533.JPG",
       "IMG_1624.JPG",
-      "IMG_9938.jpg"
+      "IMG_9938.JPG"
     ];
 
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+
     function spawnFloatingPhotos() {
+      // clear if re-clicked somehow
+      floatingPhotos.innerHTML = "";
+
+      // Avoid spawning under the card so it's not messy
+      const cardRect = card.getBoundingClientRect();
+
       photoFiles.forEach((src, i) => {
-        const div = document.createElement("div");
-        div.className = "float-photo";
-        div.style.left = Math.random() * 90 + "vw";
-        div.style.top  = Math.random() * 90 + "vh";
-        div.style.animationDelay = (i * 0.6) + "s";
+        const el = document.createElement("div");
+        el.className = "float-photo";
 
-        div.innerHTML = `<img src="${src}" alt="floating photo">`;
-        floatingPhotos.appendChild(div);
+        // Try a few times to not place on top of the card
+        let left, top, tries = 0;
+        do {
+          left = rand(3, 97); // vw
+          top  = rand(5, 95); // vh
+          tries++;
+          const px = (left / 100) * window.innerWidth;
+          const py = (top / 100)  * window.innerHeight;
+          const insideCard =
+            px > cardRect.left - 90 &&
+            px < cardRect.right + 10 &&
+            py > cardRect.top - 90 &&
+            py < cardRect.bottom + 10;
+          if (!insideCard) break;
+        } while (tries < 10);
 
-        setTimeout(() => {
-          div.style.opacity = "1";
-        }, 100);
+        el.style.left = left + "vw";
+        el.style.top  = top  + "vh";
+
+        // Make them feel “different”
+        el.style.animationDuration = rand(5.5, 8.5) + "s";
+        el.style.animationDelay = (i * 0.25) + "s";
+
+        // Tiny random scale for variety
+        const s = rand(0.92, 1.10);
+        el.style.transform = `scale(${s})`;
+
+        el.innerHTML = `<img src="${src}" alt="">`;
+        floatingPhotos.appendChild(el);
+
+        // Fade in
+        requestAnimationFrame(() => {
+          el.style.opacity = "1";
+        });
       });
     }
 
-    /* ---------- YES CLICK ---------- */
+    /* ---------- YES click ---------- */
     yesBtn.addEventListener("click", () => {
       zone.style.display = "none";
       hint.style.display = "none";
       result.style.display = "block";
+
+      // spawn the floating pics around the page
       spawnFloatingPhotos();
     });
 
@@ -263,4 +354,3 @@
 
 </body>
 </html>
-
