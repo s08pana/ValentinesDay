@@ -136,8 +136,13 @@
 
     .result {
       display: none;
-      margin-top: 24px;
+      margin-top: 20px;
       animation: pop .4s ease;
+    }
+
+    .result h2 {
+      font-size: 34px;
+      margin-bottom: 12px;
     }
 
     .result img {
@@ -160,7 +165,7 @@
   <div id="floatingPhotos"></div>
 
   <main class="card" id="card">
-    <h1>diya will you be my valentine? 💖</h1>
+    <h1>will you be my valentine? 💖</h1>
 
     <section class="button-zone" id="zone">
       <button id="yesBtn">Yes</button>
@@ -169,7 +174,9 @@
 
     <div class="hint" id="hint">i love you</div>
 
+    <!-- RESULT -->
     <section class="result" id="result">
+      <h2>YAY 💘</h2>
       <img src="8.png" alt="center photo">
     </section>
   </main>
@@ -269,7 +276,6 @@
         el.innerHTML = `<img src="${src}" alt="">`;
         floatingPhotos.appendChild(el);
 
-        // drift animation
         const driftX = (Math.random() - 0.5) * 40;
         const driftY = (Math.random() - 0.5) * 40;
         el.animate(
