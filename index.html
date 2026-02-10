@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Will you be my Valentine?</title>
 
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -20,25 +20,17 @@
 
     body {
       margin: 0;
-      min-height: 100svh;
+      min-height: 100vh;
       display: grid;
       place-items: center;
       background: radial-gradient(circle at top, var(--bg2), var(--bg1));
       font-family: system-ui, sans-serif;
       overflow: hidden;
-      padding: 16px;
-    }
-
-    #confettiCanvas {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 9999;
     }
 
     .card {
       width: min(720px, 92vw);
-      padding: 26px 22px;
+      padding: 28px;
       background: var(--card);
       backdrop-filter: blur(10px);
       border-radius: 22px;
@@ -48,7 +40,7 @@
 
     h1 {
       font-size: clamp(26px, 4vw, 44px);
-      margin: 12px 0 18px;
+      margin-bottom: 18px;
     }
 
     .button-zone {
@@ -56,7 +48,6 @@
       width: min(520px, 92%);
       height: 160px;
       margin: 0 auto;
-      touch-action: none;
     }
 
     button {
@@ -71,8 +62,7 @@
       cursor: pointer;
       box-shadow: 0 10px 24px rgba(0,0,0,.14);
       user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      transition: transform .12s ease, background .12s ease, left .12s ease;
+      transition: background .12s ease, transform .12s ease, left .15s ease;
       will-change: left, top, transform;
     }
 
@@ -90,44 +80,38 @@
     }
 
     .hint {
-      margin-top: 10px;
-      font-size: 13px;
-      opacity: .7;
+      margin-top: 14px;
+      font-size: 16px; /* +2px */
+      opacity: .8;
     }
 
     .result {
       display: none;
-      margin-top: 18px;
-      animation: pop .35s ease;
+      margin-top: 20px;
+      animation: pop .4s ease;
     }
 
     @keyframes pop {
       from { transform: scale(.96); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+      to   { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
 
 <body>
-  <canvas id="confettiCanvas"></canvas>
-
   <main class="card">
-    <h1>diya will you be my valentine?</h1>
+    <h1>diya will you be my valentine? 💖</h1>
 
     <section class="button-zone" id="zone">
       <button id="yesBtn">Yes</button>
       <button id="noBtn">No</button>
     </section>
 
-    <div class="hint" id="hint">“No” seems a bit shy 😈</div>
+    <div class="hint" id="hint">i love you</div>
 
     <section class="result" id="result">
-      <h2>YAY! 🎉</h2>
-      <img
-        src="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif"
-        width="300"
-        alt="Fireworks"
-      />
+      <h2>YAY 💘</h2>
+      <img src="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif" width="300">
     </section>
   </main>
 
@@ -135,160 +119,86 @@
     const zone = document.getElementById("zone");
     const yesBtn = document.getElementById("yesBtn");
     const noBtn  = document.getElementById("noBtn");
-    const result = document.getElementById("result");
     const hint   = document.getElementById("hint");
+    const result = document.getElementById("result");
 
-    /* ---------- CONFETTI ---------- */
-    const confettiCanvas = document.getElementById("confettiCanvas");
-    const confettiInstance = confetti.create(confettiCanvas, { resize: true, useWorker: true });
-
-    function fullScreenConfetti() {
-      const end = Date.now() + 1600;
-      (function frame() {
-        confettiInstance({
-          particleCount: 12,
-          spread: 90,
-          startVelocity: 45,
-          ticks: 180,
-          origin: { x: Math.random(), y: Math.random() * 0.3 }
-        });
-        if (Date.now() < end) requestAnimationFrame(frame);
-      })();
-
-      setTimeout(() => {
-        confettiInstance({
-          particleCount: 220,
-          spread: 140,
-          startVelocity: 60,
-          ticks: 220,
-          origin: { x: 0.5, y: 0.55 }
-        });
-      }, 250);
-    }
-
-    /* ---------- HELPERS ---------- */
-    function clamp(n, min, max) {
-      return Math.max(min, Math.min(max, n));
-    }
-
-    // Ensure No has an explicit top so we can animate it freely
-    noBtn.style.top = "50%";
-
-    /* ---------- STAGES ---------- */
-    // stage 0: normal
-    // stage 1: swapped (No Yes)
-    // stage 2: swapped back (Yes No)
-    // stage 3: runaway + yes grows
     let stage = 0;
 
     function updateHint() {
-      if (stage === 0) hint.textContent = "Try pressing “No” 😈";
+      if (stage === 0) hint.textContent = "i love you";
       if (stage === 1) hint.textContent = "Wait… did they just switch? 🤨";
-      if (stage === 2) hint.textContent = "Okay now you’re definitely trying 😭";
+      if (stage === 2) hint.textContent = "i know you too well lol";
       if (stage >= 3) hint.textContent = "There is no escape 😈";
     }
 
     function swapButtons() {
-      const yesLeft = yesBtn.style.left || "18%";
-      const noLeft  = noBtn.style.left  || "62%";
-      yesBtn.style.left = noLeft;
-      noBtn.style.left  = yesLeft;
-
-      // keep vertical centered when swapping
-      yesBtn.style.top = "50%";
-      noBtn.style.top  = "50%";
+      const y = yesBtn.style.left || "18%";
+      const n = noBtn.style.left  || "62%";
+      yesBtn.style.left = n;
+      noBtn.style.left  = y;
     }
 
-    /* ---------- YES GROWS ---------- */
+    /* YES GROWS */
     let yesScale = 1;
     function growYes() {
-      yesScale = Math.min(2.35, yesScale + 0.05);
+      yesScale = Math.min(2.4, yesScale + 0.04);
       yesBtn.style.transform = `translateY(-50%) scale(${yesScale})`;
     }
 
-    /* ---------- RUNAWAY (NO STALL) ---------- */
+    /* RUNAWAY NO (SMOOTH + FAST) */
     let fleeing = false;
-    let noVX = 0, noVY = 0;
-
-    // track the latest pointer position inside the zone
+    let vx = 0, vy = 0;
     let pointerX = null, pointerY = null;
 
-    zone.addEventListener("pointermove", (e) => {
+    zone.addEventListener("pointermove", e => {
       pointerX = e.clientX;
       pointerY = e.clientY;
     });
 
-    zone.addEventListener("pointerleave", () => {
-      pointerX = null;
-      pointerY = null;
-    });
-
-    function pushAwayFromPointer() {
-      if (!fleeing || pointerX === null || pointerY === null) return;
-
-      const b = noBtn.getBoundingClientRect();
-      const cx = b.left + b.width / 2;
-      const cy = b.top  + b.height / 2;
-
-      let dx = cx - pointerX;
-      let dy = cy - pointerY;
-
-      const dist = Math.hypot(dx, dy) || 1;
-
-      // Stronger push when close, lighter when farther (prevents “catch up”)
-      const danger = clamp(260 / dist, 0.6, 3.0);
-
-      dx /= dist;
-      dy /= dist;
-
-      const force = 1.6 * danger;
-      noVX += dx * force;
-      noVY += dy * force;
-
-      // Minimum speed floor so it never “dies”
-      const minSpeed = 7.5;
-      const maxSpeed = 22;
-
-      let speed = Math.hypot(noVX, noVY) || 1;
-
-      // clamp high end
-      if (speed > maxSpeed) {
-        noVX = (noVX / speed) * maxSpeed;
-        noVY = (noVY / speed) * maxSpeed;
-        speed = maxSpeed;
-      }
-
-      // enforce low end (keeps it feeling alive)
-      if (speed < minSpeed) {
-        noVX = (noVX / speed) * minSpeed;
-        noVY = (noVY / speed) * minSpeed;
-      }
-    }
-
     function animateNo() {
-      if (fleeing) {
-        pushAwayFromPointer();
-
+      if (fleeing && pointerX !== null) {
         const z = zone.getBoundingClientRect();
         const b = noBtn.getBoundingClientRect();
 
-        let left = (b.left - z.left) + noVX;
-        let top  = (b.top  - z.top ) + noVY;
+        const cx = b.left + b.width / 2;
+        const cy = b.top  + b.height / 2;
 
-        // bounce off edges (with energy retention so it doesn't stick)
-        if (left <= 0 || left >= z.width - b.width) noVX *= -0.9;
-        if (top  <= 0 || top  >= z.height - b.height) noVY *= -0.9;
+        let dx = cx - pointerX;
+        let dy = cy - pointerY;
+        const dist = Math.hypot(dx, dy) || 1;
 
-        left = clamp(left, 0, z.width - b.width);
-        top  = clamp(top, 0, z.height - b.height);
+        dx /= dist;
+        dy /= dist;
 
-        noBtn.style.left = left + "px";
-        noBtn.style.top  = top + "px";
-        noBtn.style.transform = "none";
+        // Panic boost when close
+        const panic = dist < 160 ? 3.5 : 1.8;
 
-        // light friction, but not enough to stall (min speed handles rest)
-        noVX *= 0.985;
-        noVY *= 0.985;
+        // Smooth steering
+        vx = vx * 0.85 + dx * panic * 6;
+        vy = vy * 0.85 + dy * panic * 6;
+
+        // Clamp speed (FAST)
+        const speed = Math.hypot(vx, vy);
+        const min = 14;
+        const max = 26;
+
+        if (speed < min) {
+          vx = (vx / speed) * min;
+          vy = (vy / speed) * min;
+        }
+        if (speed > max) {
+          vx = (vx / speed) * max;
+          vy = (vy / speed) * max;
+        }
+
+        let left = (b.left - z.left) + vx;
+        let top  = (b.top  - z.top ) + vy;
+
+        if (left <= 0 || left >= z.width - b.width) vx *= -0.9;
+        if (top  <= 0 || top  >= z.height - b.height) vy *= -0.9;
+
+        noBtn.style.left = Math.max(0, Math.min(left, z.width - b.width)) + "px";
+        noBtn.style.top  = Math.max(0, Math.min(top,  z.height - b.height)) + "px";
 
         growYes();
       }
@@ -297,49 +207,20 @@
     }
     animateNo();
 
-    /* ---------- THE ACTUAL "TRYING TO PRESS NO" TRIGGERS ---------- */
-    // This fires ONCE per entry, not 60 times/sec like pointermove.
     function onNoAttempt() {
-      if (stage === 0) {
-        swapButtons(); // Yes No -> No Yes
-        stage = 1;
-        updateHint();
-        return;
-      }
-      if (stage === 1) {
-        swapButtons(); // No Yes -> Yes No
-        stage = 2;
-        updateHint();
-        return;
-      }
-      if (stage === 2) {
-        // now unleash runaway
-        stage = 3;
-        fleeing = true;
-        updateHint();
-        return;
-      }
-      // stage >= 3: already fleeing, do nothing special here
+      if (stage === 0) { swapButtons(); stage = 1; updateHint(); return; }
+      if (stage === 1) { swapButtons(); stage = 2; updateHint(); return; }
+      if (stage === 2) { stage = 3; fleeing = true; updateHint(); }
     }
 
-    // Desktop: hover onto No
     noBtn.addEventListener("pointerenter", onNoAttempt);
+    noBtn.addEventListener("pointerdown", e => { e.preventDefault(); onNoAttempt(); });
+    noBtn.addEventListener("click", e => e.preventDefault());
 
-    // Mobile: tapping “No” should also count as an attempt
-    noBtn.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      onNoAttempt();
-    });
-
-    // Prevent clicking No
-    noBtn.addEventListener("click", (e) => e.preventDefault());
-
-    /* ---------- YES CLICK ---------- */
     yesBtn.addEventListener("click", () => {
       zone.style.display = "none";
       hint.style.display = "none";
       result.style.display = "block";
-      fullScreenConfetti();
     });
 
     updateHint();
